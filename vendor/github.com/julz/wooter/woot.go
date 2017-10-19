@@ -10,18 +10,21 @@ import (
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 )
 
+const VolumesDir string = "volumes"
+const DiffsDir string = "diffs"
+
 type Cp struct {
 	BaseDir string
 }
 
 func (c Cp) Unpack(id, parentID string, tar io.Reader) (size int, err error) {
-	dest := filepath.Join(c.BaseDir, id)
-	if err := os.Mkdir(dest, 0700); err != nil {
+	dest := filepath.Join(c.BaseDir, VolumesDir, id)
+	if err := os.MkdirAll(dest, 0700); err != nil {
 		return 0, err
 	}
 
 	if parentID != "" {
-		cpCmd := exec.Command("sh", "-c", fmt.Sprintf("cp -r %s/* %s", filepath.Join(c.BaseDir, parentID), dest+"/"))
+		cpCmd := exec.Command("sh", "-c", fmt.Sprintf("cp -r %s/* %s", filepath.Join(c.BaseDir, VolumesDir, parentID), dest+"/"))
 		if out, err := cpCmd.CombinedOutput(); err != nil {
 			return 0, fmt.Errorf("%s: %s", string(out), err)
 		}
@@ -39,6 +42,16 @@ func (c Cp) Unpack(id, parentID string, tar io.Reader) (size int, err error) {
 }
 
 func (c Cp) Bundle(id string, parentIds []string) (specs.Spec, error) {
+	dest := filepath.Join(c.BaseDir, DiffsDir, id)
+	if err := os.MkdirAll(dest, 0700); err != nil {
+		return specs.Spec{}, err
+	}
+
+	cpCmd := exec.Command("sh", "-c", fmt.Sprintf("cp -r %s/* %s", filepath.Join(c.BaseDir, VolumesDir, parentIds[len(parentIds)-1]), dest+"/"))
+	if out, err := cpCmd.CombinedOutput(); err != nil {
+		return specs.Spec{}, fmt.Errorf("%s: %s", string(out), err)
+	}
+
 	return specs.Spec{
 		Root: &specs.Root{
 			Path: filepath.Join(c.BaseDir, id),

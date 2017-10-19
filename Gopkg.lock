@@ -71,7 +71,7 @@
   branch = "master"
   name = "github.com/julz/wooter"
   packages = ["."]
-  revision = "c196cc1df61a772b75f18fd8b7855b99fa462472"
+  revision = "66de9e4b94055b9d2729586f462fc16dcdfba740"
 
 [[projects]]
   name = "github.com/opencontainers/go-digest"

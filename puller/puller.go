@@ -29,11 +29,11 @@ func (p *Puller) Pull(imageURL *url.URL, id string) (specs.Spec, error) {
 		return specs.Spec{}, err
 	}
 
-	imageWithCachedManifest, err := p.getImageWithCachedManifest(ref)
+	img, err := ref.NewImage(p.SystemContext)
 	if err != nil {
 		return specs.Spec{}, err
 	}
-	defer imageWithCachedManifest.Close()
+	defer img.Close()
 
 	imageSource, err := ref.NewImageSource(p.SystemContext)
 	if err != nil {
@@ -43,7 +43,7 @@ func (p *Puller) Pull(imageURL *url.URL, id string) (specs.Spec, error) {
 
 	var digests []string = []string{}
 	var previousDigest string
-	for _, layer := range imageWithCachedManifest.LayerInfos() {
+	for _, layer := range img.LayerInfos() {
 		blobStream, err := getBlobStream(imageSource, layer)
 		defer blobStream.Close()
 		if err != nil {
@@ -70,20 +70,6 @@ func getBlobStream(imageSource types.ImageSource, layer types.BlobInfo) (io.Read
 	}
 
 	return blobStream, err
-}
-
-func (p Puller) getImageWithCachedManifest(ref types.ImageReference) (types.Image, error) {
-	img, err := ref.NewImage(p.SystemContext)
-	if err != nil {
-		return nil, err
-	}
-
-	_, _, err = img.Manifest()
-	if err != nil {
-		return nil, err
-	}
-
-	return img, nil
 }
 
 func reference(imageURL *url.URL) (types.ImageReference, error) {
